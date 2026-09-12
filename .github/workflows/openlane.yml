@@ -15,6 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Apply clock period override
         env:
           PERIOD: ${{ github.event.inputs.clock_period || '40' }}
@@ -31,34 +36,23 @@ jobs:
           print("CLOCK_PERIOD =", cfg["CLOCK_PERIOD"])
           PY
 
+      - name: Install LibreLane host wrapper
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --upgrade librelane
+
       - name: Pull LibreLane image
         run: docker pull ghcr.io/librelane/librelane:3.0.14
 
-      - name: Run RTL-to-GDS in container
+      - name: LibreLane smoke test (pseudo-TTY)
         run: |
-          set -eux
-          mkdir -p "$GITHUB_WORKSPACE/openlane/runs" "$GITHUB_WORKSPACE/.ciel"
-          # No -t: GitHub Actions has no TTY (avoids "input device is not a TTY").
-          docker run --rm \
-            --user root \
-            -v "$GITHUB_WORKSPACE":/work \
-            -v "$GITHUB_WORKSPACE/openlane/runs":/work/openlane/runs \
-            -v "$GITHUB_WORKSPACE/.ciel":/ciel \
-            -w /work \
-            -e PDK_ROOT=/ciel \
-            -e CI=true \
-            ghcr.io/librelane/librelane:3.0.14 \
-            bash -lc '
-              set -eux
-              export PDK_ROOT=/ciel
-              if [ ! -d "$PDK_ROOT/pdk/sky130A" ] && [ ! -d "$PDK_ROOT/sky130A" ]; then
-                python3 -m pip install --upgrade ciel
-                python3 -m ciel enable sky130A || ciel enable sky130A
-              fi
-              # Prefer ciel root if nested
-              if [ -d /ciel/pdk ]; then export PDK_ROOT=/ciel/pdk; fi
-              python3 -m librelane /work/openlane/config.json
-            '
+          # GitHub Actions has no TTY; --dockerized requires one.
+          script -qefc "python3 -m librelane --dockerized --smoke-test" /dev/null
+
+      - name: Run RTL-to-GDS (pseudo-TTY)
+        run: |
+          mkdir -p openlane/runs
+          script -qefc "python3 -m librelane --dockerized openlane/config.json" /dev/null
 
       - name: Collect metrics summary
         if: always()
@@ -72,6 +66,5 @@ jobs:
           path: |
             openlane/runs/**
             docs/metrics_summary.md
-            .ciel/**
           retention-days: 14
           if-no-files-found: warn
