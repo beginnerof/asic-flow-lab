@@ -15,6 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Apply clock period override
         env:
           PERIOD: ${{ github.event.inputs.clock_period || '40' }}
@@ -31,32 +36,18 @@ jobs:
           print("CLOCK_PERIOD =", cfg["CLOCK_PERIOD"])
           PY
 
-      - name: Run OpenLane2 RTL-to-GDS
+      - name: Install LibreLane
         run: |
-          set -eux
-          mkdir -p "$GITHUB_WORKSPACE/openlane/runs"
-          # Official image ships the toolchain; mount the repo as the design tree.
-          docker run --rm \
-            --user root \
-            -v "$GITHUB_WORKSPACE":/work \
-            -v "$GITHUB_WORKSPACE/openlane/runs":/work/openlane/runs \
-            -w /work \
-            -e PDK=sky130A \
-            efabless/openlane2:latest \
-            bash -lc '
-              set -eux
-              if [ -z "${PDK_ROOT:-}" ]; then
-                if [ -d /pdk ]; then export PDK_ROOT=/pdk
-                elif [ -d "$HOME/.volare" ]; then export PDK_ROOT="$HOME/.volare"
-                else
-                  pip install --user volare
-                  export PATH="$HOME/.local/bin:$PATH"
-                  volare enable --pdk sky130
-                  export PDK_ROOT="$HOME/.volare"
-                fi
-              fi
-              python3 -m openlane --pdk-root "$PDK_ROOT" /work/openlane/config.json
-            '
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --upgrade librelane
+
+      - name: LibreLane smoke test
+        run: python3 -m librelane --dockerized --smoke-test
+
+      - name: Run RTL-to-GDS
+        run: |
+          mkdir -p openlane/runs
+          python3 -m librelane --dockerized openlane/config.json
 
       - name: Collect metrics summary
         if: always()

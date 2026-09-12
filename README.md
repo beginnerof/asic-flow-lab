@@ -8,11 +8,11 @@
 
 ## English Abstract
 
-A portfolio **open-source ASIC flow lab** hardening an iterative AES-128 encrypt/decrypt core (same RTL family as `rv32i-cryptocore`) from RTL to GDSII. Functional simulation uses Icarus Verilog with a self-checking NIST FIPS-197 C.1 testbench. Lint and the full OpenLane2 / sky130A flow (Yosys synthesis, OpenROAD place-and-route, Magic/KLayout DRC, GDS) run in GitHub Actions; local machines only need Icarus for the fast regression. The top-level `aes_asic_top` exposes a flat 32-bit MMIO interface for pin placement. Clock target starts at 25 MHz for first-pass closure; metrics and GDS are published as workflow artifacts.
+A portfolio **open-source ASIC flow lab** hardening an iterative AES-128 encrypt/decrypt core (same RTL family as `rv32i-cryptocore`) from RTL to GDSII. Functional simulation uses Icarus Verilog with a self-checking NIST FIPS-197 C.1 testbench. The full LibreLane (successor of OpenLane 2) / sky130A flow (Yosys synthesis, OpenROAD place-and-route, Magic/KLayout DRC, GDS) run in GitHub Actions; local machines only need Icarus for the fast regression. The top-level `aes_asic_top` exposes a flat 32-bit MMIO interface for pin placement. Clock target starts at 25 MHz for first-pass closure; metrics and GDS are published as workflow artifacts.
 
 ### Resume bullets (replace numbers after CI)
 
-1. Hardened an iterative AES-128 encrypt/decrypt core through an open-source ASIC flow (Icarus sim → Verilator lint → Yosys/OpenROAD OpenLane2 + sky130A) from RTL to GDSII; FIPS-197 C.1 encrypt/decrypt self-check passes.
+1. Hardened an iterative AES-128 encrypt/decrypt core through an open-source ASIC flow (Icarus sim → LibreLane/Yosys/OpenROAD + sky130A) from RTL to GDSII; FIPS-197 C.1 encrypt/decrypt self-check passes.
 2. Built `aes_asic_top` with a flat MMIO pin map, clock constraints, and automated report extraction (`metrics.json` → area / DRC / timing summary) in GitHub Actions.
 3. Separated a three-layer flow: local Icarus regression, push-time lint/sim CI, and manual-trigger full RTL-to-GDS run with uploaded GDS and metrics artifacts.
 
@@ -24,14 +24,14 @@ A portfolio **open-source ASIC flow lab** hardening an iterative AES-128 encrypt
 |----|------|------|--------|
 | L0 | AES FIPS-197 功能仿真 | Icarus Verilog | **本机**（Windows/Linux） |
 | L1 | 回归 + Lint | iverilog / verilator | **GitHub Actions**（每次 push） |
-| L2 | 综合 → P&R → DRC → GDS | OpenLane2 + sky130A | **Actions 手动触发** 或本机 Docker |
+| L2 | 综合 → P&R → DRC → GDS | LibreLane + sky130A | **Actions 手动触发** 或本机 Docker |
 
 ```text
 RTL (aes_asic_top)
    │
    ├─ L0  iverilog + tb_aes.v          → PASS
    ├─ L1  verilator --lint-only        → CI
-   └─ L2  OpenLane2 Classic
+   └─ L2  LibreLane Classic
             Yosys 综合
             OpenROAD 布局 / CTS / 布线
             Magic + KLayout DRC / LVS
@@ -81,7 +81,7 @@ PASS
 make lint
 ```
 
-## 5. OpenLane 全流程（L2）
+## 5. LibreLane 全流程（L2）
 
 ### GitHub Actions（推荐，本机零安装）
 
@@ -96,13 +96,11 @@ make lint
 需要 Docker Desktop。示例：
 
 ```bash
-docker pull efabless/openlane2:latest
-# 在仓库根目录，挂载路径按你的 Docker 卷习惯调整
-docker run --rm -v "$PWD:/work" efabless/openlane2:latest \
-  python3 -m openlane --dockerized /work/openlane/config.json
+python3 -m pip install --upgrade librelane
+python3 -m librelane --dockerized openlane/config.json
 ```
 
-PDK（sky130A）首次会下载，请预留磁盘与时间。
+LibreLane 会自动拉镜像并首次下载 sky130A PDK，请预留磁盘与时间。
 
 ### 配置要点
 
@@ -135,7 +133,7 @@ PDK（sky130A）首次会下载，请预留磁盘与时间。
 
 1. 迭代 AES vs 全展开：面积 / 吞吐 / 频率折中  
 2. 为何先低频（40 ns）再提频：保证 P&R 收敛，再优化关键路径  
-3. OpenLane 里综合、布局、CTS、布线分别解决什么问题  
+3. LibreLane 里综合、布局、CTS、布线分别解决什么问题  
 4. DRC/LVS 失败和时序失败处理方式不同  
 5. sky130 教学 PDK 与工业 PDK 的差距（库特性、工具、签核深度）
 
