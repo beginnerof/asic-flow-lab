@@ -1,10 +1,10 @@
 {
   "DESIGN_NAME": "aes_asic_top",
   "VERILOG_FILES": [
-    "dir::../../rtl/aes_core.v",
-    "dir::../../rtl/aes_mmio.v",
-    "dir::../../rtl/cryptocore_top.v",
-    "dir::../../rtl/aes_asic_top.v"
+    "dir::../rtl/aes_core.v",
+    "dir::../rtl/aes_mmio.v",
+    "dir::../rtl/cryptocore_top.v",
+    "dir::../rtl/aes_asic_top.v"
   ],
   "CLOCK_PORT": "clk",
   "CLOCK_PERIOD": 40.0,
@@ -13,9 +13,9 @@
   "FP_SIZING": "relative",
   "FP_CORE_UTIL": 35,
   "PL_TARGET_DENSITY_PCT": 45,
-  "FP_PIN_ORDER_CFG": "dir::pin_order.cfg",
+  "IO_PIN_ORDER_CFG": "dir::pin_order.cfg",
   "RUN_HEURISTIC_DIODE_INSERTION": true,
-  "QUIT_ON_TIMING_VIOLATIONS": false,
-  "QUIT_ON_MAGIC_DRC": false,
-  "QUIT_ON_LVS_ERROR": false
+  "ERROR_ON_TIMING_VIOLATIONS": false,
+  "ERROR_ON_MAGIC_DRC": false,
+  "ERROR_ON_LVS_ERROR": false
 }
