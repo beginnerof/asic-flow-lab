@@ -1,0 +1,74 @@
+name: openlane
+
+on:
+  workflow_dispatch:
+    inputs:
+      clock_period:
+        description: "Clock period in ns (default 40 = 25 MHz)"
+        required: false
+        default: "40"
+
+jobs:
+  rtl-to-gds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply clock period override
+        env:
+          PERIOD: ${{ github.event.inputs.clock_period || '40' }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          p = "openlane/config.json"
+          with open(p) as f:
+              cfg = json.load(f)
+          cfg["CLOCK_PERIOD"] = float(os.environ["PERIOD"])
+          with open(p, "w") as f:
+              json.dump(cfg, f, indent=2)
+              f.write("\n")
+          print("CLOCK_PERIOD =", cfg["CLOCK_PERIOD"])
+          PY
+
+      - name: Run OpenLane2 RTL-to-GDS
+        run: |
+          set -eux
+          mkdir -p "$GITHUB_WORKSPACE/openlane/runs"
+          # Official image ships the toolchain; mount the repo as the design tree.
+          docker run --rm \
+            --user root \
+            -v "$GITHUB_WORKSPACE":/work \
+            -v "$GITHUB_WORKSPACE/openlane/runs":/work/openlane/runs \
+            -w /work \
+            -e PDK=sky130A \
+            efabless/openlane2:latest \
+            bash -lc '
+              set -eux
+              if [ -z "${PDK_ROOT:-}" ]; then
+                if [ -d /pdk ]; then export PDK_ROOT=/pdk
+                elif [ -d "$HOME/.volare" ]; then export PDK_ROOT="$HOME/.volare"
+                else
+                  pip install --user volare
+                  export PATH="$HOME/.local/bin:$PATH"
+                  volare enable --pdk sky130
+                  export PDK_ROOT="$HOME/.volare"
+                fi
+              fi
+              python3 -m openlane --pdk-root "$PDK_ROOT" /work/openlane/config.json
+            '
+
+      - name: Collect metrics summary
+        if: always()
+        run: python3 scripts/extract_reports.py openlane/runs || true
+
+      - name: Upload OpenLane artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openlane-asic-flow-lab
+          path: |
+            openlane/runs/**
+            docs/metrics_summary.md
+          retention-days: 14
+          if-no-files-found: warn

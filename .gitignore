@@ -1,0 +1,7 @@
+sim/
+*.vcd
+*.vvp
+openlane/runs/
+__pycache__/
+*.pyc
+.DS_Store
