@@ -56,15 +56,26 @@ jobs:
 
       - name: Collect metrics summary
         if: always()
-        run: python3 scripts/extract_reports.py openlane/runs || true
+        run: |
+          python3 scripts/extract_reports.py openlane/runs || true
+          if [ -f docs/metrics_summary.md ]; then
+            cat docs/metrics_summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
 
-      - name: Upload OpenLane artifacts
+      - name: Upload metrics summary (small)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-summary
+          path: docs/metrics_summary.md
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload full OpenLane run (large)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: openlane-asic-flow-lab
-          path: |
-            openlane/runs/**
-            docs/metrics_summary.md
-          retention-days: 14
+          path: openlane/runs/**
+          retention-days: 7
           if-no-files-found: warn

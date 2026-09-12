@@ -4,7 +4,9 @@
 
 设计源与 [rv32i-cryptocore](https://github.com/beginnerof/rv32i-cryptocore) 同源（本仓自包含拷贝，便于单独投递）。
 
-> 本地仿真：`make test` 输出 `ENCRYPT PASS` / `DECRYPT PASS` / `PASS`（NIST FIPS-197 C.1）。
+> 本地仿真：`make test` 输出 `ENCRYPT PASS` / `DECRYPT PASS` / `PASS`（NIST FIPS-197 C.1）。  
+> 开源 ASIC 全流程（LibreLane + sky130A）已在 GitHub Actions **成功跑通 RTL→GDS**（约 1h06m）：  
+> https://github.com/beginnerof/asic-flow-lab/actions/runs/34697562747
 
 ## English Abstract
 
@@ -88,7 +90,7 @@ make lint
 1. Fork / 推送本仓库  
 2. Actions → **openlane** → **Run workflow**  
 3. 可改 `clock_period`（默认 40 ns ≈ 25 MHz）  
-4. 结束后下载 artifact `openlane-asics-flow-lab`  
+4. 结束后下载 artifact：`metrics-summary`（小，优先）或 `openlane-asic-flow-lab`（含 GDS，较大）  
 5. 把 `docs/metrics_summary.md` 里的真实数字写回 README
 
 ### 本机 Docker（可选）
