@@ -10,13 +10,15 @@
 
 ## English Abstract
 
-A portfolio **open-source ASIC flow lab** hardening an iterative AES-128 encrypt/decrypt core (same RTL family as `rv32i-cryptocore`) from RTL to GDSII. Functional simulation uses Icarus Verilog with a self-checking NIST FIPS-197 C.1 testbench. The full LibreLane (successor of OpenLane 2) / sky130A flow (Yosys synthesis, OpenROAD place-and-route, Magic/KLayout DRC, GDS) run in GitHub Actions; local machines only need Icarus for the fast regression. The top-level `aes_asic_top` exposes a flat 32-bit MMIO interface for pin placement. Clock target starts at 25 MHz for first-pass closure; metrics and GDS are published as workflow artifacts.
+A portfolio **open-source ASIC flow lab** hardening an iterative AES-128 encrypt/decrypt core (same RTL family as `rv32i-cryptocore`) from RTL to GDSII. Functional simulation uses Icarus Verilog with a self-checking NIST FIPS-197 C.1 testbench. The full LibreLane (successor of OpenLane 2) / sky130A flow — Yosys synthesis, OpenROAD place-and-route, Magic/KLayout DRC, LVS, GDS — completed in GitHub Actions in about 1h06m. The top-level `aes_asic_top` exposes a flat 32-bit MMIO interface for pin placement.
 
-### Resume bullets (replace numbers after CI)
+**First-pass results** (sky130A, `CLOCK_PERIOD=40 ns` ≈ 25 MHz): die 0.695 mm² (828×839 µm), utilization 60%, ~71k stdcells (1939 FFs), setup/hold WNS = 0 (worst setup slack +5.68 ns), route DRC = 0, Magic/KLayout DRC = 0, LVS = 0. Metrics and GDS are workflow artifacts. See [docs/metrics_summary.md](docs/metrics_summary.md).
 
-1. Hardened an iterative AES-128 encrypt/decrypt core through an open-source ASIC flow (Icarus sim → LibreLane/Yosys/OpenROAD + sky130A) from RTL to GDSII; FIPS-197 C.1 encrypt/decrypt self-check passes.
-2. Built `aes_asic_top` with a flat MMIO pin map, clock constraints, and automated report extraction (`metrics.json` → area / DRC / timing summary) in GitHub Actions.
-3. Separated a three-layer flow: local Icarus regression, push-time lint/sim CI, and manual-trigger full RTL-to-GDS run with uploaded GDS and metrics artifacts.
+### Resume bullets
+
+1. Hardened an iterative AES-128 encrypt/decrypt core through an open-source ASIC flow (Icarus sim → LibreLane/Yosys/OpenROAD + sky130A) from RTL to GDSII in GitHub Actions (~1h06m); die 0.695 mm², 60% util, ~71k stdcells; setup/hold clean at 25 MHz (worst setup slack +5.68 ns); DRC/LVS = 0; FIPS-197 encrypt/decrypt self-check passes.
+2. Built `aes_asic_top` with a flat MMIO pin map, OpenLane `config.json` + pin-order constraints, and automated `metrics.json` → markdown extraction in CI.
+3. Separated a three-layer flow: local Icarus regression, push-time sim CI, and manual-trigger full RTL-to-GDS with GDS + metrics artifacts.
 
 ---
 
@@ -127,9 +129,19 @@ LibreLane 会自动拉镜像并首次下载 sky130A PDK，请预留磁盘与时�
 
 字节序与 FIPS-197 一致：128-bit 字最高字节为 FIPS byte 0。
 
-## 7. 结果怎么读
+## 7. 首次 RTL→GDS 结果（sky130A @ 40 ns）
 
-见 [docs/flow.md](docs/flow.md) 与 CI 生成的 [docs/metrics_summary.md](docs/metrics_summary.md)。
+| 项 | 结果 |
+|----|------|
+| Die | 0.695 mm²（828.6 × 839.3 µm） |
+| 利用率 | 60 % |
+| 标准单元 | ~71k（时序单元 1939） |
+| Setup / Hold | WNS = 0，无违例（最差 setup 裕量 +5.68 ns） |
+| Route DRC / Magic DRC / KLayout DRC | 0 / 0 / 0 |
+| LVS / Antenna | 0 / 0 |
+| 运行时间 | 约 1h06m（Actions） |
+
+详见 [docs/metrics_summary.md](docs/metrics_summary.md)。完整 GDS 在对应 run 的 artifact 中。
 
 面试常问：
 
